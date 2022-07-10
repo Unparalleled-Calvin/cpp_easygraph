@@ -22,5 +22,10 @@ BOOST_PYTHON_MODULE(cpp_easygraph)
         .def("neighbors", &neighbors, (py::arg("node")))
         .def("all_neighbors", &neighbors, (py::arg("node")))
         .def("nodes_subgraph", &nodes_subgraph, (py::arg("from_nodes")))
-        .def("ego_subgraph", &ego_subgraph, (py::arg("center")));
+        .def("ego_subgraph", &ego_subgraph, (py::arg("center")))
+        .add_property("name", &Graph::get_graph)
+        .add_property("nodes", &Graph::get_nodes)
+        .add_property("name", &Graph::get_name)
+        .add_property("adj", &Graph::get_adj)
+        .add_property("edges", &Graph::get_edges);
 }

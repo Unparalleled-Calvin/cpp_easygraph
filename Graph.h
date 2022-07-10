@@ -8,14 +8,21 @@ struct Graph
 	typedef int node_t;
 	typedef float weight_t;
 	typedef std::map<std::string, weight_t> node_attr_dict_factory; //(weight_key, value)
-	typedef std::unordered_map<node_t, std::map<std::string, weight_t> > edge_attr_dict_factory; //(out_node, (weight_key, value))
+	typedef std::map<std::string, weight_t> edge_attr_dict_factory;
 	typedef std::unordered_map<node_t, node_attr_dict_factory> node_dict_factory; //(node, node_attr)
-	typedef std::unordered_map<node_t, edge_attr_dict_factory> adj_dict_factory; //(node, edge_attr)
+	typedef std::unordered_map<node_t, edge_attr_dict_factory> adj_attr_dict_factory; //(out_node, (weight_key, value))
+	typedef std::unordered_map<node_t, adj_attr_dict_factory> adj_dict_factory; //(node, edge_attr)
 
 	node_dict_factory node;
 	adj_dict_factory adj;
 	py::dict node_to_id, id_to_node, graph;
 	node_t id;
+
+	py::object get_nodes();
+	py::object get_name();
+	py::object get_graph();
+	py::object get_adj();
+	py::object get_edges();
 };
 
 py::object __init__(py::tuple args, py::dict kwargs);

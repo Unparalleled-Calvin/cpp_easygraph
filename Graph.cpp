@@ -1,5 +1,13 @@
 #include "Graph.h"
 
+py::object attr_to_dict(const Graph::node_attr_dict_factory& attr) {
+	py::dict attr_dict = py::dict();
+	for (const auto& kv : attr) {
+		attr_dict[kv.first] = kv.second;
+	}
+	return attr_dict;
+}
+
 py::object __init__(py::tuple args, py::dict kwargs) {
 	py::object fake_self = args[0];
 	py::object self = fake_self.attr("__class__")();
@@ -39,8 +47,8 @@ Graph::node_t _add_one_node(Graph& self, py::object one_node_for_adding, py::dic
 	}
 	py::list items = py::list(node_attr.items());
 	self.node[id] = Graph::node_attr_dict_factory();
-	self.adj[id] = Graph::edge_attr_dict_factory();
-	for (int i = 0; i<len(items);i++) {
+	self.adj[id] = Graph::adj_attr_dict_factory();
+	for (int i = 0; i < len(items);i++) {
 		py::tuple kv = py::extract<py::tuple>(items[i]);
 		std::string key = py::extract<std::string>(kv[0]);
 		Graph::weight_t value = py::extract<Graph::weight_t>(kv[1]);
@@ -94,7 +102,7 @@ py::object add_nodes_from(py::tuple args, py::dict kwargs) {
 		catch (const py::error_already_set&) {
 			PyObject* type, * value, * traceback;
 			PyErr_Fetch(&type, &value, &traceback);
-			if (PyErr_GivenExceptionMatches(PyExc_TypeError, type) ){
+			if (PyErr_GivenExceptionMatches(PyExc_TypeError, type)) {
 				py::tuple n_pair = py::extract<py::tuple>(n);
 				n = n_pair[0];
 				ndict = py::extract<py::dict>(n_pair[1]);
@@ -126,7 +134,7 @@ py::object add_nodes_from(py::tuple args, py::dict kwargs) {
 	return py::object();
 }
 
-void _add_one_edge(Graph& self, py::object u_of_edge,py::object v_of_edge, py::dict edge_attr) {
+void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::dict edge_attr) {
 	Graph::node_t u, v;
 	if (self.node_to_id.contains(u_of_edge)) {
 		u = _add_one_node(self, u_of_edge);
@@ -308,7 +316,7 @@ py::object add_weighted_edge(Graph& self, py::object u_of_edge, py::object v_of_
 py::object copy(py::object self) {
 	Graph& self_ = py::extract<Graph&>(self);
 	py::object G = self.attr("__class__")();
-	Graph &G_ = py::extract<Graph&>(G);
+	Graph& G_ = py::extract<Graph&>(G);
 	G_.graph.update(self_.graph);
 	G_.id_to_node.update(self_.id_to_node);
 	G_.node_to_id.update(self_.node_to_id);
@@ -386,4 +394,55 @@ py::object ego_subgraph(py::object self, py::object center) {
 	py::list neighbors_of_center = py::list(self.attr("all_neighbors")(center));
 	neighbors_of_center.append(center);
 	return self.attr("nodes_subgraph")(neighbors_of_center);
+}
+
+py::object Graph::get_nodes() {
+	py::dict nodes = py::dict();
+	for (const auto& node_info : node) {
+		node_t id = node_info.first;
+		const auto& node_attr = node_info.second;
+		nodes[this->id_to_node[id]] = attr_to_dict(node_attr);
+	}
+	return nodes;
+}
+
+py::object Graph::get_name() {
+	return this->graph.attr("get")("name", "");
+}
+
+py::object Graph::get_graph() {
+	return this->graph;
+}
+
+py::object Graph::get_adj() {
+	py::dict adj = py::dict();
+	for (const auto& ego_edges : this->adj) {
+		node_t start_point = ego_edges.first;
+		py::dict ego_edges_dict = py::dict();
+		for (const auto& edge_info : ego_edges.second) {
+			node_t end_point = edge_info.first;
+			const auto& edge_attr = edge_info.second;
+			ego_edges_dict[this->id_to_node[end_point]] = attr_to_dict(edge_attr);
+		}
+		adj[this->id_to_node[start_point]] = ego_edges_dict;
+	}
+	return adj;
+}
+
+py::object Graph::get_edges() {
+	py::list edges = py::list();
+	std::set<std::pair<node_t, node_t> > seen;
+	for (const auto& ego_edges : this->adj) {
+		node_t u = ego_edges.first;
+		for (const auto& edge_info : ego_edges.second) {
+			node_t v = edge_info.first;
+			const auto& edge_attr = edge_info.second;
+			if (seen.find({ u,v }) == seen.end()) {
+				seen.insert({ u, v });
+				seen.insert({ v, u });
+				edges.append(py::make_tuple(this->id_to_node(u), this->id_to_node(v), attr_to_dict(edge_attr)));
+			}
+		}
+	}
+	return edges;
 }
