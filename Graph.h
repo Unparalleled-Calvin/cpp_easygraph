@@ -5,13 +5,17 @@
 
 struct Graph
 {
-	std::unordered_map<int, std::map<std::string, float>>node;
-	std::unordered_map<int, std::unordered_map<int, std::map<std::string, float>>> adj;
-	py::dict node_to_id, id_to_node, graph;
-	int id;
+	typedef int node_t;
+	typedef float weight_t;
+	typedef std::map<std::string, weight_t> node_attr_dict_factory; //(weight_key, value)
+	typedef std::unordered_map<node_t, std::map<std::string, weight_t> > edge_attr_dict_factory; //(out_node, (weight_key, value))
+	typedef std::unordered_map<node_t, node_attr_dict_factory> node_dict_factory; //(node, node_attr)
+	typedef std::unordered_map<node_t, edge_attr_dict_factory> adj_dict_factory; //(node, edge_attr)
 
-	typedef std::unordered_map<int, std::map<std::string, float> > edge_attr_dict_factory;
-	typedef std::map<std::string, float> node_attr_dict_factory;
+	node_dict_factory node;
+	adj_dict_factory adj;
+	py::dict node_to_id, id_to_node, graph;
+	node_t id;
 };
 
 py::object __init__(py::tuple args, py::dict kwargs);
@@ -26,9 +30,9 @@ py::object add_edge(py::tuple args, py::dict kwargs);
 py::object add_edges(Graph& self, py::list edges_for_adding, py::list edges_attr);
 py::object add_edges_from(py::tuple args, py::dict attr);
 py::object add_edges_from_file(Graph& self, py::str file, py::object weighted);
-py::object add_weighted_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, float weight);
+py::object add_weighted_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, Graph::weight_t weight);
 py::object copy(py::object self);
-py::dict degree(py::object self, py::str weight);
+py::object degree(py::object self, py::str weight);
 py::object neighbors(py::object self, py::object node);
 py::object nodes_subgraph(py::object self, py::list from_nodes);
 py::object ego_subgraph(py::object self, py::object center);
