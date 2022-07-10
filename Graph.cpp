@@ -1,5 +1,32 @@
 #include "Graph.h"
 
+py::object __init__(py::tuple args, py::dict kwargs) {
+	py::object fake_self = args[0];
+	py::object self = fake_self.attr("__class__")();
+	Graph& self_ = py::extract<Graph&>(self);
+	py::dict graph_attr = kwargs;
+	self_.graph.update(graph_attr);
+	return py::object();
+}
+
+py::object __iter__(py::object self) {
+	return self.attr("node").attr("__iter__");
+}
+
+py::object __len__(py::object self) {
+	Graph& self_ = py::extract<Graph&>(self);
+	return py::object(py::len(self_.node_to_id));
+}
+
+py::object __contains__(py::object self, py::object node) {
+	Graph& self_ = py::extract<Graph&>(self);
+	return self_.node_to_id.contains(node);
+}
+
+py::object __getitem__(py::object self, py::object node) {
+	return self.attr("adj")[node];
+}
+
 int _add_one_node(Graph& self, py::object one_node_for_adding, py::dict node_attr = py::dict()) {
 	int id;
 	if (self.node_to_id.contains(one_node_for_adding)) {
@@ -68,8 +95,9 @@ py::object add_nodes_from(py::tuple args, py::dict kwargs) {
 			PyObject* type, * value, * traceback;
 			PyErr_Fetch(&type, &value, &traceback);
 			if (PyErr_GivenExceptionMatches(PyExc_TypeError, type) ){
-				//Warning: does it make sense?
-				py::make_tuple(n, ndict) = py::extract<py::tuple>(n);
+				py::tuple n_pair = py::extract<py::tuple>(n);
+				n = n_pair[0];
+				ndict = py::extract<py::dict>(n_pair[1]);
 				newnode = !self.node_to_id.contains(n);
 				newdict = attr.copy();
 				newdict.update(ndict);
@@ -275,4 +303,87 @@ py::object add_weighted_edge(Graph& self, py::object u_of_edge, py::object v_of_
 	edge_attr["weight"] = weight;
 	_add_one_edge(self, u_of_edge, v_of_edge, edge_attr);
 	return py::object();
+}
+
+py::object copy(py::object self) {
+	Graph& self_ = py::extract<Graph&>(self);
+	py::object G = self.attr("__class__")();
+	Graph &G_ = py::extract<Graph&>(G);
+	G_.graph.update(self_.graph);
+	G_.id_to_node.update(self_.id_to_node);
+	G_.node_to_id.update(self_.node_to_id);
+	G_.node = self_.node;
+	G_.adj = self_.adj;
+	return py::object(G);
+}
+
+py::dict degree(py::object self, py::str weight) {
+	py::dict degree;
+	std::string weight_key = py::extract<std::string>(weight);
+	py::list edges = py::extract<py::list>(self.attr("edges"));
+	py::object u, v;
+	py::dict d;
+	for (int i = 0;i < py::len(edges);i++) {
+		py::tuple edge = py::extract<py::tuple>(edges[i]);
+		u = edge[0];
+		v = edge[1];
+		d = py::extract<py::dict>(edge[2]);
+		if (degree.contains(u)) {
+			degree[u] += d.attr("get")(weight, 1);
+		}
+		else {
+			degree[u] = d.attr("get")(weight, 1);
+		}
+		if (degree.contains(v)) {
+			degree[v] += d.attr("get")(weight, 1);
+		}
+		else {
+			degree[v] = d.attr("get")(weight, 1);
+		}
+	}
+	return degree;
+}
+
+py::object neighbors(py::object self, py::object node) {
+	Graph& self_ = py::extract<Graph&>(self);
+	if (!self_.node_to_id.contains(node)) {
+		return self.attr("adj")[node].attr("__iter__")();
+	}
+	else {
+		PyErr_Format(PyExc_KeyError, "No node %R", node.ptr());
+		return py::object();
+	}
+}
+
+py::object nodes_subgraph(py::object self, py::list from_nodes) {
+	py::object G = self.attr("__class__")();
+	Graph& self_ = py::extract<Graph&>(self);
+	Graph& G_ = py::extract<Graph&>(G);
+	G_.graph.update(self_.graph);
+	py::dict nodes = py::extract<py::dict>(self.attr("nodes"));
+	py::dict adj = py::extract<py::dict>(self.attr("adj"));
+	for (int i = 0;i < py::len(from_nodes);i++) {
+		py::object node = from_nodes[i];
+		if (self_.node_to_id.contains(node)) {
+			py::dict node_attr = py::extract<py::dict>(nodes[node]);
+			_add_one_node(G_, node, node_attr);
+		}
+		py::dict out_edges = py::extract<py::dict>(adj[node]);
+		py::list edge_items = py::extract<py::list>(out_edges.items());
+		for (int j = 0;j < py::len(edge_items);i++) {
+			py::tuple item = py::extract<py::tuple>(edge_items[j]);
+			py::object v = item[0];
+			py::dict edge_attr = py::extract<py::dict>(item[1]);
+			if (from_nodes.contains(v)) {
+				_add_one_edge(G_, node, v, edge_attr);
+			}
+		}
+	}
+	return G;
+}
+
+py::object ego_subgraph(py::object self, py::object center) {
+	py::list neighbors_of_center = py::list(self.attr("all_neighbors")(center));
+	neighbors_of_center.append(center);
+	return self.attr("nodes_subgraph")(neighbors_of_center);
 }
