@@ -1,12 +1,5 @@
 #include "Graph.h"
-
-py::object attr_to_dict(const Graph::node_attr_dict_factory& attr) {
-	py::dict attr_dict = py::dict();
-	for (const auto& kv : attr) {
-		attr_dict[kv.first] = kv.second;
-	}
-	return attr_dict;
-}
+#include "Utils.h"
 
 py::object __init__(py::tuple args, py::dict kwargs) {
 	py::object fake_self = args[0];

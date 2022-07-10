@@ -2,7 +2,7 @@
 
 BOOST_PYTHON_MODULE(cpp_easygraph)
 {
-    boost::python::class_<Graph>("Graph", py::no_init)
+    py::class_<Graph>("Graph", py::no_init)
         .def("__init__", py::raw_function(&__init__))
         .def(py::init<>())
         .def("__iter__", &__iter__)
