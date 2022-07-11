@@ -127,6 +127,47 @@ py::object add_nodes_from(py::tuple args, py::dict kwargs) {
 	return py::object();
 }
 
+py::object remove_node(Graph& self, py::object node_to_remove) {
+	if (!self.node_to_id.contains(node_to_remove)) {
+		PyErr_Format(PyExc_KeyError, "No node %R in graph.", node_to_remove.ptr());
+		return py::object();
+	}
+	Graph::node_t node_id = py::extract<Graph::node_t>(self.node_to_id[node_to_remove]);
+	for (const auto& neighbor_info : self.adj[node_id]) {
+		Graph::node_t neighbor_id = neighbor_info.first;
+		self.adj[neighbor_id].erase(node_id);
+	}
+	self.adj.erase(node_id);
+	self.node.erase(node_id);
+	self.node_to_id.attr("pop")(node_to_remove);
+	self.id_to_node.attr("pop")(node_id);
+	return py::object();
+}
+
+py::object remove_nodes(py::object self, py::list nodes_to_remove) {
+	Graph& self_ = py::extract<Graph&>(self);
+	for (int i = 0;i < py::len(nodes_to_remove);i++) {
+		py::object node_to_remove = nodes_to_remove[i];
+		if (!self_.node_to_id.contains(node_to_remove)) {
+			PyErr_Format(PyExc_KeyError, "No node %R in graph.", node_to_remove.ptr());
+			return py::object();
+		}
+	}
+	for (int i = 0;i < py::len(nodes_to_remove);i++) {
+		py::object node_to_remove = nodes_to_remove[i];
+		self.attr("remove_node")(node_to_remove);
+	}
+	return py::object();
+}
+
+py::object number_of_nodes(Graph& self) {
+	return py::object(int(self.node.size()));
+}
+
+py::object has_node(Graph& self, py::object node) {
+	return self.node_to_id.contains(node);
+}
+
 void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::dict edge_attr) {
 	Graph::node_t u, v;
 	if (self.node_to_id.contains(u_of_edge)) {
@@ -306,6 +347,48 @@ py::object add_weighted_edge(Graph& self, py::object u_of_edge, py::object v_of_
 	return py::object();
 }
 
+py::object remove_edge(Graph& self, py::object u, py::object v) {
+	if (self.node_to_id.contains(u) && self.node_to_id.contains(v)) {
+		Graph::node_t u_id = py::extract<Graph::node_t>(self.node_to_id[u]);
+		Graph::node_t v_id = py::extract<Graph::node_t>(self.node_to_id[v]);
+		auto& v_neighbors_info = self.adj[u_id];
+		if (v_neighbors_info.find(v_id) != v_neighbors_info.end()) {
+			v_neighbors_info.erase(v_id);
+			if (u_id != v_id) {
+				self.adj[v_id].erase(u_id);
+			}
+			return py::object();
+		}
+	}
+	PyErr_Format(PyExc_KeyError, "No edge %R-%R in graph.", u.ptr(), v.ptr());
+	return py::object();
+}
+
+py::object remove_edges(py::object self, py::list edges_to_remove) {
+	for (int i = 0;i < py::len(edges_to_remove);i++) {
+		py::tuple edge = py::extract<py::tuple>(edges_to_remove[i]);
+		py::object u = edge[0], v = edge[1];
+		self.attr("remove_edge")(u, v);
+	}
+	return py::object();
+}
+
+py::object number_of_edges(py::object self) {
+	return self.attr("size")();
+}
+
+py::object has_edge(Graph& self, py::object u, py::object v) {
+	if (self.node_to_id.contains(u) && self.node_to_id.contains(v)) {
+		Graph::node_t u_id = py::extract<Graph::node_t>(self.node_to_id[u]);
+		Graph::node_t v_id = py::extract<Graph::node_t>(self.node_to_id[v]);
+		auto& v_neighbors_info = self.adj[u_id];
+		if (v_neighbors_info.find(v_id) != v_neighbors_info.end()) {
+			return py::object(true);
+		}
+	}
+	return py::object(false);
+}
+
 py::object copy(py::object self) {
 	Graph& self_ = py::extract<Graph&>(self);
 	py::object G = self.attr("__class__")();
@@ -387,6 +470,14 @@ py::object ego_subgraph(py::object self, py::object center) {
 	py::list neighbors_of_center = py::list(self.attr("all_neighbors")(center));
 	neighbors_of_center.append(center);
 	return self.attr("nodes_subgraph")(neighbors_of_center);
+}
+
+py::object is_directed(py::object self) {
+	return py::object(false);
+}
+
+py::object is_multigraph(py::object self) {
+	return py::object(false);
 }
 
 py::object Graph::get_nodes() {
