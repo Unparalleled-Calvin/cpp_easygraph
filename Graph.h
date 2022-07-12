@@ -17,6 +17,10 @@ struct Graph
 	adj_dict_factory adj;
 	py::dict node_to_id, id_to_node, graph;
 	node_t id;
+	bool dirty;
+
+	py::object read_only_wrapper;
+	py::object nodes_cache, adj_cache;
 
 	py::object get_nodes();
 	py::object get_name();

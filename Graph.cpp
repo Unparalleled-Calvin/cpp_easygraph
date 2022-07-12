@@ -2,11 +2,14 @@
 #include "Utils.h"
 
 py::object __init__(py::tuple args, py::dict kwargs) {
-	py::object fake_self = args[0];
-	py::object self = fake_self.attr("__class__")();
+	py::object self = args[0];
+	self.attr("__init__")();
 	Graph& self_ = py::extract<Graph&>(self);
 	py::dict graph_attr = kwargs;
 	self_.graph.update(graph_attr);
+	self_.read_only_wrapper = py::import("types").attr("MappingProxyType");
+	self_.nodes_cache = self_.read_only_wrapper(py::dict());
+	self_.adj_cache = self_.read_only_wrapper(py::dict());
 	return py::object();
 }
 
@@ -58,6 +61,7 @@ Graph::node_t _add_one_node(Graph& self, py::object one_node_for_adding, py::dic
 
 py::object add_node(py::tuple args, py::dict kwargs) {
 	Graph& self = py::extract<Graph&>(args[0]);
+	self.dirty = true;
 	py::object one_node_for_adding = args[1];
 	py::dict node_attr = kwargs;
 	_add_one_node(self, one_node_for_adding, node_attr);
@@ -65,7 +69,7 @@ py::object add_node(py::tuple args, py::dict kwargs) {
 }
 
 py::object add_nodes(Graph& self, py::list nodes_for_adding, py::list nodes_attr) {
-	//Graph& self = py::extract<Graph&>(self_);
+	self.dirty = true;
 	if (py::len(nodes_attr) != 0) {
 		if (py::len(nodes_for_adding) != py::len(nodes_attr)) {
 			PyErr_Format(PyExc_AssertionError, "Nodes and Attributes lists must have same length.");
@@ -89,6 +93,7 @@ py::object add_nodes(Graph& self, py::list nodes_for_adding, py::list nodes_attr
 py::object add_nodes_from(py::tuple args, py::dict kwargs) {
 	py::object warnings = py::import("warnings");
 	Graph& self = py::extract<Graph&>(args[0]);
+	self.dirty = true;
 	py::list nodes_for_adding = py::list(args[1]);
 	for (int i = 0;i < py::len(nodes_for_adding);i++) {
 		bool newnode;
@@ -140,6 +145,7 @@ py::object add_nodes_from(py::tuple args, py::dict kwargs) {
 }
 
 py::object remove_node(Graph& self, py::object node_to_remove) {
+	self.dirty = true;
 	if (!self.node_to_id.contains(node_to_remove)) {
 		PyErr_Format(PyExc_KeyError, "No node %R in graph.", node_to_remove.ptr());
 		return py::object();
@@ -158,6 +164,7 @@ py::object remove_node(Graph& self, py::object node_to_remove) {
 
 py::object remove_nodes(py::object self, py::list nodes_to_remove) {
 	Graph& self_ = py::extract<Graph&>(self);
+	self_.dirty = true;
 	for (int i = 0;i < py::len(nodes_to_remove);i++) {
 		py::object node_to_remove = nodes_to_remove[i];
 		if (!self_.node_to_id.contains(node_to_remove)) {
@@ -214,6 +221,7 @@ void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::
 
 py::object add_edge(py::tuple args, py::dict kwargs) {
 	Graph& self = py::extract<Graph&>(args[0]);
+	self.dirty = true;
 	py::object u_of_edge = args[1], v_of_edge = args[2];
 	py::dict edge_attr = kwargs;
 	_add_one_edge(self, u_of_edge, v_of_edge, edge_attr);
@@ -221,6 +229,7 @@ py::object add_edge(py::tuple args, py::dict kwargs) {
 }
 
 py::object add_edges(Graph& self, py::list edges_for_adding, py::list edges_attr) {
+	self.dirty = true;
 	if (py::len(edges_attr) != 0) {
 		if (py::len(edges_for_adding) != py::len(edges_attr)) {
 			PyErr_Format(PyExc_AssertionError, "Edges and Attributes lists must have same length.");
@@ -244,6 +253,7 @@ py::object add_edges(Graph& self, py::list edges_for_adding, py::list edges_attr
 py::object add_edges_from(py::tuple args, py::dict attr) {
 	py::object warnings = py::import("warnings");
 	Graph& self = py::extract<Graph&>(args[0]);
+	self.dirty = true;
 	py::list ebunch_to_add = py::list(args[1]);
 	for (int i = 0;i < len(ebunch_to_add);i++) {
 		py::list e = py::list(ebunch_to_add[i]);
@@ -303,6 +313,7 @@ py::object add_edges_from(py::tuple args, py::dict attr) {
 }
 
 py::object add_edges_from_file(Graph& self, py::str file, py::object weighted) {
+	self.dirty = true;
 	struct commactype : std::ctype<char> {
 		commactype() : std::ctype<char>(get_table()) {}
 		std::ctype_base::mask const* get_table() {
@@ -365,6 +376,7 @@ py::object add_edges_from_file(Graph& self, py::str file, py::object weighted) {
 }
 
 py::object add_weighted_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, Graph::weight_t weight) {
+	self.dirty = true;
 	py::dict edge_attr;
 	edge_attr["weight"] = weight;
 	_add_one_edge(self, u_of_edge, v_of_edge, edge_attr);
@@ -372,6 +384,7 @@ py::object add_weighted_edge(Graph& self, py::object u_of_edge, py::object v_of_
 }
 
 py::object remove_edge(Graph& self, py::object u, py::object v) {
+	self.dirty = true;
 	if (self.node_to_id.contains(u) && self.node_to_id.contains(v)) {
 		Graph::node_t u_id = py::extract<Graph::node_t>(self.node_to_id[u]);
 		Graph::node_t v_id = py::extract<Graph::node_t>(self.node_to_id[v]);
@@ -389,11 +402,13 @@ py::object remove_edge(Graph& self, py::object u, py::object v) {
 }
 
 py::object remove_edges(py::object self, py::list edges_to_remove) {
+	Graph& self_ = py::extract<Graph&>(self);
 	for (int i = 0;i < py::len(edges_to_remove);i++) {
 		py::tuple edge = py::extract<py::tuple>(edges_to_remove[i]);
 		py::object u = edge[0], v = edge[1];
 		self.attr("remove_edge")(u, v);
 	}
+	self_.dirty = true;
 	return py::object();
 }
 
@@ -520,13 +535,17 @@ py::object is_multigraph(py::object self) {
 }
 
 py::object Graph::get_nodes() {
-	py::dict nodes = py::dict();
-	for (const auto& node_info : node) {
-		node_t id = node_info.first;
-		const auto& node_attr = node_info.second;
-		nodes[this->id_to_node[id]] = attr_to_dict(node_attr);
+	if (this->dirty) {
+		py::dict nodes = py::dict();
+		for (const auto& node_info : node) {
+			node_t id = node_info.first;
+			const auto& node_attr = node_info.second;
+			nodes[this->id_to_node[id]] = attr_to_dict(node_attr);
+		}
+		this->nodes_cache = this->read_only_wrapper(nodes);
+		this->dirty = false;
 	}
-	return nodes;
+	return this->nodes_cache;
 }
 
 py::object Graph::get_name() {
@@ -538,18 +557,22 @@ py::object Graph::get_graph() {
 }
 
 py::object Graph::get_adj() {
-	py::dict adj = py::dict();
-	for (const auto& ego_edges : this->adj) {
-		node_t start_point = ego_edges.first;
-		py::dict ego_edges_dict = py::dict();
-		for (const auto& edge_info : ego_edges.second) {
-			node_t end_point = edge_info.first;
-			const auto& edge_attr = edge_info.second;
-			ego_edges_dict[this->id_to_node[end_point]] = attr_to_dict(edge_attr);
+	if (this->dirty) {
+		py::dict adj = py::dict();
+		for (const auto& ego_edges : this->adj) {
+			node_t start_point = ego_edges.first;
+			py::dict ego_edges_dict = py::dict();
+			for (const auto& edge_info : ego_edges.second) {
+				node_t end_point = edge_info.first;
+				const auto& edge_attr = edge_info.second;
+				ego_edges_dict[this->id_to_node[end_point]] = attr_to_dict(edge_attr);
+			}
+			adj[this->id_to_node[start_point]] = ego_edges_dict;
 		}
-		adj[this->id_to_node[start_point]] = ego_edges_dict;
+		this->adj_cache = this->read_only_wrapper(adj);
+		this->dirty = false;
 	}
-	return adj;
+	return this->adj_cache;
 }
 
 py::object Graph::get_edges() {
