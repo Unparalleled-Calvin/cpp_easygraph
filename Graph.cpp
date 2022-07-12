@@ -11,7 +11,7 @@ py::object __init__(py::tuple args, py::dict kwargs) {
 }
 
 py::object __iter__(py::object self) {
-	return self.attr("node").attr("__iter__");
+	return self.attr("nodes").attr("__iter__");
 }
 
 py::object __len__(py::object self) {
@@ -82,7 +82,7 @@ py::object add_nodes(Graph& self, py::list nodes_for_adding, py::list nodes_attr
 
 py::object add_nodes_from(py::tuple args, py::dict kwargs) {
 	Graph& self = py::extract<Graph&>(args[0]);
-	py::tuple nodes_for_adding = py::tuple(args.slice(1, py::slice_nil()));
+	py::list nodes_for_adding = py::list(args[1]);
 	for (int i = 0;i < py::len(nodes_for_adding);i++) {
 		bool newnode;
 		py::dict attr = kwargs;
@@ -115,7 +115,7 @@ py::object add_nodes_from(py::tuple args, py::dict kwargs) {
 			}
 			_add_one_node(self, n);
 		}
-		Graph::node_t id = py::extract<Graph::node_t>(self.node_to_id(n));
+		Graph::node_t id = py::extract<Graph::node_t>(self.node_to_id[n]);
 		py::list items = py::list(newdict.items());
 		for (int i = 0; i < len(items);i++) {
 			py::tuple kv = py::extract<py::tuple>(items[i]);
@@ -170,13 +170,13 @@ py::object has_node(Graph& self, py::object node) {
 
 void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::dict edge_attr) {
 	Graph::node_t u, v;
-	if (self.node_to_id.contains(u_of_edge)) {
+	if (!self.node_to_id.contains(u_of_edge)) {
 		u = _add_one_node(self, u_of_edge);
 	}
 	else {
 		u = py::extract<Graph::node_t>(self.node_to_id[u_of_edge]);
 	}
-	if (self.node_to_id.contains(v_of_edge)) {
+	if (!self.node_to_id.contains(v_of_edge)) {
 		v = _add_one_node(self, v_of_edge);
 	}
 	else {
@@ -225,7 +225,7 @@ py::object add_edges(Graph& self, py::list edges_for_adding, py::list edges_attr
 
 py::object add_edges_from(py::tuple args, py::dict attr) {
 	Graph& self = py::extract<Graph&>(args[0]);
-	py::tuple ebunch_to_add = py::tuple(args.slice(1, py::slice_nil()));
+	py::list ebunch_to_add = py::list(args[1]);
 	for (int i = 0;i < len(ebunch_to_add);i++) {
 		py::list e = py::list(ebunch_to_add[i]);
 		py::object u, v;
@@ -524,7 +524,7 @@ py::object Graph::get_edges() {
 			if (seen.find({ u,v }) == seen.end()) {
 				seen.insert({ u, v });
 				seen.insert({ v, u });
-				edges.append(py::make_tuple(this->id_to_node(u), this->id_to_node(v), attr_to_dict(edge_attr)));
+				edges.append(py::make_tuple(this->id_to_node[u], this->id_to_node[v], attr_to_dict(edge_attr)));
 			}
 		}
 	}
