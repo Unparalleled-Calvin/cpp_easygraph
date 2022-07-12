@@ -47,10 +47,11 @@ py::object remove_edges(py::object self, py::list edges_to_remove);
 py::object number_of_edges(py::object self);
 py::object has_edge(Graph& self, py::object u, py::object v);
 py::object copy(py::object self);
-py::object degree(py::object self, py::str weight);
+py::object degree(py::object self, py::object weight);
 py::object neighbors(py::object self, py::object node);
 py::object nodes_subgraph(py::object self, py::list from_nodes);
 py::object ego_subgraph(py::object self, py::object center);
+py::object size(py::object self, py::object weight);
 py::object is_directed(py::object self);
 py::object is_multigraph(py::object self);
 
