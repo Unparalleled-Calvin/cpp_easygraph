@@ -1,4 +1,5 @@
 #include "Graph.h"
+#include "Structural_holes.h"
 
 BOOST_PYTHON_MODULE(cpp_easygraph)
 {
@@ -39,4 +40,5 @@ BOOST_PYTHON_MODULE(cpp_easygraph)
         .add_property("name", &Graph::get_name)
         .add_property("adj", &Graph::get_adj)
         .add_property("edges", &Graph::get_edges);
+    py::def("constraint", &constraint, (py::arg("G"), py::arg("nodes") = py::object(), py::arg("weight") = py::object(), py::arg("n_workers") = py::object()));
 }

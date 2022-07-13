@@ -8,5 +8,6 @@
 #include <unordered_map>
 #include <exception>
 #include <set>
+#include <cmath>
 
 namespace py = boost::python;
