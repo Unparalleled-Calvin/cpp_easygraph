@@ -1,4 +1,5 @@
 #include "Evaluation.h"
+#include "Utils.h"
 
 struct pair_hash
 {
@@ -80,12 +81,7 @@ std::pair<Graph::node_t, Graph::weight_t> compute_constraint_of_v(Graph::adj_dic
 }
 
 py::object constraint(py::object self, py::object G, py::object nodes, py::object weight, py::object n_workers) {
-	py::object warnings = py::import("warnings");
-	if (weight.attr("__class__") != py::str().attr("__class__")) {
-		warnings.attr("warn")(py::str(weight) + py::str(" would be transformed into an instance of str."));
-		weight = py::str(weight);
-	}
-	std::string weight_key = py::extract<std::string>(weight);
+	std::string weight_key = weight_to_string(weight);
 	sum_nmw_rec.clear();
 	max_nmw_rec.clear();
 	local_constraint_rec.clear();

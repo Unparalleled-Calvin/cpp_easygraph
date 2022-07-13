@@ -32,7 +32,6 @@ py::object __getitem__(py::object self, py::object node) {
 }
 
 Graph::node_t _add_one_node(Graph& self, py::object one_node_for_adding, py::dict node_attr = py::dict()) {
-	py::object warnings = py::import("warnings");
 	Graph::node_t id;
 	if (self.node_to_id.contains(one_node_for_adding)) {
 		id = py::extract<Graph::node_t>(self.node_to_id[one_node_for_adding]);
@@ -48,13 +47,9 @@ Graph::node_t _add_one_node(Graph& self, py::object one_node_for_adding, py::dic
 	for (int i = 0; i < len(items);i++) {
 		py::tuple kv = py::extract<py::tuple>(items[i]);
 		py::object pkey = kv[0];
-		if (pkey.attr("__class__") != py::str().attr("__class__")) {
-			warnings.attr("warn")(py::str(pkey) + py::str(" would be transformed into an instance of str."));
-			pkey = py::str(pkey);
-		}
-		std::string key = py::extract<std::string>(pkey);
+		std::string weight_key = weight_to_string(pkey);
 		Graph::weight_t value = py::extract<Graph::weight_t>(kv[1]);
-		self.node[id].insert(std::make_pair(key, value));
+		self.node[id].insert(std::make_pair(weight_key, value));
 	}
 	return id;
 }
@@ -91,7 +86,6 @@ py::object add_nodes(Graph& self, py::list nodes_for_adding, py::list nodes_attr
 }
 
 py::object add_nodes_from(py::tuple args, py::dict kwargs) {
-	py::object warnings = py::import("warnings");
 	Graph& self = py::extract<Graph&>(args[0]);
 	self.dirty = true;
 	py::list nodes_for_adding = py::list(args[1]);
@@ -132,13 +126,9 @@ py::object add_nodes_from(py::tuple args, py::dict kwargs) {
 		for (int i = 0; i < len(items);i++) {
 			py::tuple kv = py::extract<py::tuple>(items[i]);
 			py::object pkey = kv[0];
-			if (pkey.attr("__class__") != py::str().attr("__class__")) {
-				warnings.attr("warn")(py::str(pkey) + py::str(" would be transformed into an instance of str."));
-				pkey = py::str(pkey);
-			}
-			std::string key = py::extract<std::string>(pkey);
+			std::string weight_key = weight_to_string(pkey);
 			Graph::weight_t value = py::extract<Graph::weight_t>(kv[1]);
-			self.node[id].insert(std::make_pair(key, value));
+			self.node[id].insert(std::make_pair(weight_key, value));
 		}
 	}
 	return py::object();
@@ -188,7 +178,6 @@ py::object has_node(Graph& self, py::object node) {
 }
 
 void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::dict edge_attr) {
-	py::object warnings = py::import("warnings");
 	Graph::node_t u, v;
 	if (!self.node_to_id.contains(u_of_edge)) {
 		u = _add_one_node(self, u_of_edge);
@@ -208,14 +197,10 @@ void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::
 	for (int i = 0; i < len(items);i++) {
 		py::tuple kv = py::extract<py::tuple>(items[i]);
 		py::object pkey = kv[0];
-		if (pkey.attr("__class__") != py::str().attr("__class__")) {
-			warnings.attr("warn")(py::str(pkey) + py::str(" would be transformed into an instance of str."));
-			pkey = py::str(pkey);
-		}
-		std::string key = py::extract<std::string>(pkey);
+		std::string weight_key = weight_to_string(pkey);
 		Graph::weight_t value = py::extract<Graph::weight_t>(kv[1]);
-		self.adj[u][v].insert(std::make_pair(key, value));
-		self.adj[v][u].insert(std::make_pair(key, value));
+		self.adj[u][v].insert(std::make_pair(weight_key, value));
+		self.adj[v][u].insert(std::make_pair(weight_key, value));
 	}
 }
 
@@ -251,7 +236,6 @@ py::object add_edges(Graph& self, py::list edges_for_adding, py::list edges_attr
 }
 
 py::object add_edges_from(py::tuple args, py::dict attr) {
-	py::object warnings = py::import("warnings");
 	Graph& self = py::extract<Graph&>(args[0]);
 	self.dirty = true;
 	py::list ebunch_to_add = py::list(args[1]);
@@ -297,13 +281,9 @@ py::object add_edges_from(py::tuple args, py::dict attr) {
 		for (int i = 0;i < py::len(items);i++) {
 			py::tuple kv = py::extract<py::tuple>(items[i]);
 			py::object pkey = kv[0];
-			if (pkey.attr("__class__") != py::str().attr("__class__")) {
-				warnings.attr("warn")(py::str(pkey) + py::str(" would be transformed into an instance of str."));
-				pkey = py::str(pkey);
-			}
-			std::string key = py::extract<std::string>(pkey);
+			std::string weight_key = weight_to_string(pkey);
 			Graph::weight_t value = py::extract<Graph::weight_t>(kv[1]);
-			datadict.insert(std::make_pair(key, value));
+			datadict.insert(std::make_pair(weight_key, value));
 		}
 		//Warning: in Graph.py the edge attr is directed assigned by the dict extended from the original attr 
 		self.adj[u_id][v_id].insert(datadict.begin(), datadict.end());
@@ -441,13 +421,8 @@ py::object copy(py::object self) {
 }
 
 py::object degree(py::object self, py::object weight) {
-	py::object warnings = py::import("warnings");
 	py::dict degree;
-	if (weight.attr("__class__") != py::str().attr("__class__")) {
-		warnings.attr("warn")(py::str(weight) + py::str(" would be transformed into an instance of str."));
-		weight = py::str(weight);
-	}
-	std::string weight_key = py::extract<std::string>(weight);
+	std::string weight_key = weight_to_string(weight);
 	py::list edges = py::extract<py::list>(self.attr("edges"));
 	py::object u, v;
 	py::dict d;

@@ -8,7 +8,7 @@ struct Graph
 	typedef int node_t;
 	typedef float weight_t;
 	typedef std::map<std::string, weight_t> node_attr_dict_factory; //(weight_key, value)
-	typedef std::map<std::string, weight_t> edge_attr_dict_factory;
+	typedef std::map<std::string, weight_t> edge_attr_dict_factory; //(weight_key, value)
 	typedef std::unordered_map<node_t, node_attr_dict_factory> node_dict_factory; //(node, node_attr)
 	typedef std::unordered_map<node_t, edge_attr_dict_factory> adj_attr_dict_factory; //(out_node, (weight_key, value))
 	typedef std::unordered_map<node_t, adj_attr_dict_factory> adj_dict_factory; //(node, edge_attr)
