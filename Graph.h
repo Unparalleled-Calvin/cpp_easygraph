@@ -19,8 +19,7 @@ struct Graph
 	adj_dict_factory adj;
 	py::dict node_to_id, id_to_node, graph;
 	node_t id;
-	bool dirty;
-
+	bool dirty_nodes, dirty_adj;
 	py::object nodes_cache, adj_cache;
 
 	Graph();

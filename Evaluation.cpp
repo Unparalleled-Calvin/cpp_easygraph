@@ -59,7 +59,7 @@ Graph::weight_t local_constraint(Graph::adj_dict_factory& G, Graph::node_t u, Gr
 		Graph::weight_t direct = normalized_mutual_weight(G, u, v, weight);
 		Graph::weight_t indirect = 0;
 		for (auto& w : G[u]) {
-			indirect += normalized_mutual_weight(G, u, w.first, weight) * normalized_mutual_weight(G, w.first, u, weight);
+			indirect += normalized_mutual_weight(G, u, w.first, weight) * normalized_mutual_weight(G, w.first, v, weight);
 		}
 		Graph::weight_t result = pow((direct + indirect), 2);
 		local_constraint_rec[edge] = result;
