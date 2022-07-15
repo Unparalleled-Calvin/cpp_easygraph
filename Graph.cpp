@@ -1,15 +1,24 @@
 #include "Graph.h"
 #include "Utils.h"
 
+Graph::Graph() {
+	this->id = 0;
+	this->dirty = false;
+	this->node_to_id = py::dict();
+	this->id_to_node = py::dict();
+	this->graph = py::dict();
+	this->nodes_cache = MappingProxyType(py::dict());
+	this->adj_cache = MappingProxyType(py::dict());
+}
+
 py::object __init__(py::tuple args, py::dict kwargs) {
 	py::object self = args[0];
 	self.attr("__init__")();
 	Graph& self_ = py::extract<Graph&>(self);
 	py::dict graph_attr = kwargs;
 	self_.graph.update(graph_attr);
-	self_.read_only_wrapper = py::import("types").attr("MappingProxyType");
-	self_.nodes_cache = self_.read_only_wrapper(py::dict());
-	self_.adj_cache = self_.read_only_wrapper(py::dict());
+	self_.nodes_cache = MappingProxyType(py::dict());
+	self_.adj_cache = MappingProxyType(py::dict());
 	return py::object();
 }
 
@@ -517,7 +526,7 @@ py::object Graph::get_nodes() {
 			const auto& node_attr = node_info.second;
 			nodes[this->id_to_node[id]] = attr_to_dict(node_attr);
 		}
-		this->nodes_cache = this->read_only_wrapper(nodes);
+		this->nodes_cache = MappingProxyType(nodes);
 		this->dirty = false;
 	}
 	return this->nodes_cache;
@@ -544,7 +553,7 @@ py::object Graph::get_adj() {
 			}
 			adj[this->id_to_node[start_point]] = ego_edges_dict;
 		}
-		this->adj_cache = this->read_only_wrapper(adj);
+		this->adj_cache = MappingProxyType(adj);
 		this->dirty = false;
 	}
 	return this->adj_cache;

@@ -3,6 +3,8 @@
 
 #include "Common.h"
 
+extern py::object MappingProxyType;
+
 struct Graph
 {
 	typedef int node_t;
@@ -19,9 +21,9 @@ struct Graph
 	node_t id;
 	bool dirty;
 
-	py::object read_only_wrapper;
 	py::object nodes_cache, adj_cache;
 
+	Graph();
 	py::object get_nodes();
 	py::object get_name();
 	py::object get_graph();

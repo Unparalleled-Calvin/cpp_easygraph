@@ -3,10 +3,12 @@
 #include "Structural_holes.h"
 
 py::object warnings;
+py::object MappingProxyType;
 
 BOOST_PYTHON_MODULE(cpp_easygraph)
 {
     warnings = py::import("warnings");
+    MappingProxyType = py::import("types").attr("MappingProxyType");
 
     py::class_<Graph>("Graph", py::no_init)
         .def("__init__", py::raw_function(&__init__))

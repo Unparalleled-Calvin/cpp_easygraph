@@ -80,7 +80,7 @@ std::pair<Graph::node_t, Graph::weight_t> compute_constraint_of_v(Graph::adj_dic
 	return std::make_pair(v, constraint_of_v);
 }
 
-py::object constraint(py::object self, py::object G, py::object nodes, py::object weight, py::object n_workers) {
+py::object constraint(py::object G, py::object nodes, py::object weight, py::object n_workers) {
 	std::string weight_key = weight_to_string(weight);
 	sum_nmw_rec.clear();
 	max_nmw_rec.clear();
