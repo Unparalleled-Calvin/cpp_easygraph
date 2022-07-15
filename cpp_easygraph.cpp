@@ -2,12 +2,12 @@
 #include "Utils.h"
 #include "Structural_holes.h"
 
-py::object warnings;
+py::object warn;
 py::object MappingProxyType;
 
 BOOST_PYTHON_MODULE(cpp_easygraph)
 {
-    warnings = py::import("warnings");
+    warn = py::import("warnings").attr("warn");
     MappingProxyType = py::import("types").attr("MappingProxyType");
 
     py::class_<Graph>("Graph", py::no_init)

@@ -10,7 +10,7 @@ py::object attr_to_dict(const Graph::node_attr_dict_factory& attr) {
 
 std::string weight_to_string(py::object weight) {
 	if (weight.attr("__class__") != py::str().attr("__class__")) {
-		warnings.attr("warn")(py::str(weight) + py::str(" would be transformed into an instance of str."));
+		warn(py::str(weight) + py::str(" would be transformed into an instance of str."));
 		weight = py::str(weight);
 	}
 	std::string weight_key = py::extract<std::string>(weight);

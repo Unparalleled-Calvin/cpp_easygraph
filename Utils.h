@@ -7,4 +7,4 @@
 py::object attr_to_dict(const Graph::node_attr_dict_factory& attr);
 std::string weight_to_string(py::object weight);
 
-extern py::object warnings;
+extern py::object warn;
