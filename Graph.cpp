@@ -580,9 +580,9 @@ py::object Graph::get_edges() {
 		for (const auto& edge_info : ego_edges.second) {
 			node_t v = edge_info.first;
 			const auto& edge_attr = edge_info.second;
-			if (seen.find({ u,v }) == seen.end()) {
-				seen.insert({ u, v });
-				seen.insert({ v, u });
+			if (seen.find(std::make_pair(u,v)) == seen.end()) {
+				seen.insert(std::make_pair(u,v));
+				seen.insert(std::make_pair(v,u));
 				edges.append(py::make_tuple(this->id_to_node[u], this->id_to_node[v], attr_to_dict(edge_attr)));
 			}
 		}

@@ -55,3 +55,111 @@ boost::python::extract\<T>(...)  负责从参数中提取出类型T，这是常�
 ##### 生成使用
 
 直接点击生成解决方案即可。确认生成目录下成功生成.pyd文件后尝试import。
+
+
+
+### Mac
+
+#### 安装
+
+因为官方网上的教程过于简单，本人多次尝试均出现各种奇怪的问题，所以建议直接使用mac平台下的软件包工具:homebrew。
+
+该教程默认电脑上是有python3的。
+
+Homebrew下载：
+
+官方网址：https://brew.sh/
+
+进入官方网后，直接复制Install Homebrew标题下的命令，然后打开mac的终端执行即可。
+
+用Homebrew下载软件包是在命令行执行的，一般格式是：brew install xxx
+
+更新Homebrew的命令：brew update
+
+其他homebrew特性可以在官方网或其他论坛上查看。
+
+用homebrew下载boost,下面是两条命令，请依次执行，第一条命令第一次执行比较慢，请耐心等待。
+
+```
+brew install boost --build-from-source
+brew install boost-python3
+```
+
+homebrew一般会把下载的这些软件包放在:/usr/local/Cellar/目录下，可以command+shift+g查看是否存在boost，boost-python3
+
+下载完成后，首先新建一个hello_ext.cpp文件测试。
+
+```C++
+#include <boost/python.hpp>
+
+char const* greet()
+{
+   return "Greetings!";
+}
+
+BOOST_PYTHON_MODULE(hello_ext)
+{
+    using namespace boost::python;
+    def("greet", greet);
+}
+```
+
+然后在当前目录下新建一个setup.py文件用于构建拓展
+
+```python
+from distutils.core import setup
+from distutils.extension import Extension
+
+hello_ext = Extension(
+    'hello_ext',
+    sources=['hello_ext.cpp'],
+    libraries=['boost_python-mt'],
+)
+
+setup(
+    name='hello-world',
+    version='0.1',
+    ext_modules=[hello_ext])
+```
+
+然后在命令行运行
+
+```shell
+python setup.py build_ext --inplace
+```
+
+然后会看到当前目录下出现
+
+```
+build/
+hello_ext.xxxx.so
+```
+
+其中.so文件就是生成的调用库，可以进入python命令行直接
+
+```
+In [1]: import hello_ext
+In [2]: hello_ext.greet()
+Out[2]: 'Greetings!‘
+```
+
+若成功出现'Greetings!‘则说明boost_python3构建成功。
+
+若出现:ld: library not found for -lboost_pythonxx(xx代表你电脑对应默认python版本，比如我的电脑是python3.9,则xx就是39)的问题，则首先在你的电脑中查找是否有libboost_python39.dylib这个文件。
+
+若没有：则说明你brew install boost-python3没成功，可以再下载,注意下载过程中是否有报错，若报错了则对应修改或执行相应推荐命令即可。下载完成后可以通过再执行brew install boost-python3，若出现告诉你boost-python3没link，则按照提示去link即可。
+
+若有：则试试 brew link boost-python3,若出现权限不够的问题，可以利用chmod修改对应文件的权限为777后再执行，或者你不希望所有用户有读写这些文件的权利，可以查询其他数字组合
+
+```shell
+chmod 777 文件绝对路径
+```
+
+在brew link boost-python3后若出现Warning: Already linked: /usr/local/Cellar/boost-python3/1.79.0，则代表已经link过了。
+
+若成功应该可以在/usr/local/lib/下看到libboost_python39.dylib，且图标下方有个小箭头，代表软链接到了/usr/local/Cellar/boost-python3/1.79.0/lib中的libboost_python39.dylib
+
+![截屏2022-07-16 09.13.03.png](https://s2.loli.net/2022/07/16/yg3we6KisonH7CG.png)
+
+若出现其他不可预见的问题，可以在csdn/stackoverflow上查找答案。
+
