@@ -104,7 +104,7 @@ py::object constraint(py::object G, py::object nodes, py::object weight, py::obj
 
 Graph::weight_t redundancy(Graph::adj_dict_factory& G, Graph::node_t u, Graph::node_t v, std::string weight = "None") {
 	Graph::weight_t r = 0;
-	for (const auto& neighbor_info : G) {
+	for (const auto& neighbor_info : G[u]) {
 		Graph::node_t w = neighbor_info.first;
 		r += normalized_mutual_weight(G, u, w, weight) * normalized_mutual_weight(G, v, w, weight, max);
 	}
@@ -129,7 +129,8 @@ py::object effective_size(py::object G, py::object nodes, py::object weight, py:
 			}
 			py::object E = G.attr("ego_subgraph")(v);
 			if (py::len(E) > 1) {
-				effective_size[v] = py::len(E) - 1 - (2 * E.attr("size")()) / (py::len(E) - 1);
+				Graph::weight_t size = py::extract<Graph::weight_t>(E.attr("size")());
+				effective_size[v] = py::len(E) - 1 - (2.0 * size) / (py::len(E) - 1);
 			}
 			else {
 				effective_size[v] = 0;
@@ -146,7 +147,7 @@ py::object effective_size(py::object G, py::object nodes, py::object weight, py:
 			}
 			Graph::weight_t redundancy_sum = 0;
 			Graph::node_t v_id = py::extract<Graph::node_t>(G_.node_to_id[v]);
-			for (const auto& neighbor_info : G_.adj) {
+			for (const auto& neighbor_info : G_.adj[v_id]) {
 				Graph::node_t u_id = neighbor_info.first;
 				redundancy_sum += redundancy(G_.adj, v_id, u_id, weight_key);
 			}

@@ -24,7 +24,7 @@ py::object __init__(py::tuple args, py::dict kwargs) {
 }
 
 py::object __iter__(py::object self) {
-	return self.attr("nodes").attr("__iter__");
+	return self.attr("nodes").attr("__iter__")();
 }
 
 py::object __len__(py::object self) {
