@@ -4,11 +4,13 @@
 
 #### 安装
 
+部分可参考[B站视频](https://www.bilibili.com/video/BV1YE411w722)，或[简书](https://www.jianshu.com/p/2cabb894404e)
+
 1. 确保VS已安装MSVC编译器和Win10 SDK
 
    ![image-20220711004442554](https://s2.loli.net/2022/07/11/Y1I3Pg6fcwpRhx5.png)
 
-2. 在VS的Develop Command Prompt终端中**进入下载好的Boost Python文件夹**
+2. 在VS的Develop Command Prompt终端中**进入[下载](https://www.boost.org/users/history/version_1_79_0.html)好的Boost文件夹**
 
    <img src="https://s2.loli.net/2022/07/16/bzhkCV2SrqXEP5d.png" alt="image-20220716113520507" style="zoom: 67%;" />
 
@@ -16,9 +18,14 @@
 
    - 编译出的lib库与当前环境下的python是匹配的，所以如果要为anaconda下某个python编译，需要在Develop Command Prompt中conda activate ...
 
-3. 运行bootstrap.bat编译出b2.exe。然后**根据本机环境**修改如下命令并运行：
+3. 运行bootstrap.bat编译出b2.exe
 
-    ```cmd
+    ```
+    bootstrap.bat
+    
+3. **根据本机环境**(例如有conda等)修改如下命令并运行：
+
+    ```
     b2 install --toolset=msvc-14.3 --with-python --prefix="D:\Program Files (x86)\Boost" link=static runtime-link=shared threading=multi address-model=64
     ```
 

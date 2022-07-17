@@ -3,8 +3,8 @@
 
 Graph::Graph() {
 	this->id = 0;
-	this->dirty_nodes = false;
-	this->dirty_adj = false;
+	this->dirty_nodes = true;
+	this->dirty_adj = true;
 	this->node_to_id = py::dict();
 	this->id_to_node = py::dict();
 	this->graph = py::dict();
@@ -41,7 +41,7 @@ py::object __getitem__(py::object self, py::object node) {
 	return self.attr("adj")[node];
 }
 
-Graph::node_t _add_one_node(Graph& self, py::object one_node_for_adding, py::dict node_attr = py::dict()) {
+Graph::node_t _add_one_node(Graph& self, py::object one_node_for_adding, py::object node_attr = py::dict()) {
 	Graph::node_t id;
 	if (self.node_to_id.contains(one_node_for_adding)) {
 		id = py::extract<Graph::node_t>(self.node_to_id[one_node_for_adding]);
@@ -51,7 +51,7 @@ Graph::node_t _add_one_node(Graph& self, py::object one_node_for_adding, py::dic
 		self.id_to_node[id] = one_node_for_adding;
 		self.node_to_id[one_node_for_adding] = id;
 	}
-	py::list items = py::list(node_attr.items());
+	py::list items = py::list(node_attr.attr("items")());
 	self.node[id] = Graph::node_attr_dict_factory();
 	self.adj[id] = Graph::adj_attr_dict_factory();
 	for (int i = 0; i < len(items);i++) {
@@ -192,7 +192,7 @@ py::object has_node(Graph& self, py::object node) {
 	return self.node_to_id.contains(node);
 }
 
-void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::dict edge_attr) {
+void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::object edge_attr) {
 	Graph::node_t u, v;
 	if (!self.node_to_id.contains(u_of_edge)) {
 		u = _add_one_node(self, u_of_edge);
@@ -206,7 +206,7 @@ void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::
 	else {
 		v = py::extract<Graph::node_t>(self.node_to_id[v_of_edge]);
 	}
-	py::list items = py::list(edge_attr.items());
+	py::list items = py::list(edge_attr.attr("items")());
 	self.adj[u][v] = Graph::node_attr_dict_factory();
 	self.adj[v][u] = Graph::node_attr_dict_factory();
 	for (int i = 0; i < len(items);i++) {
@@ -471,7 +471,7 @@ py::object degree(py::object self, py::object weight) {
 
 py::object neighbors(py::object self, py::object node) {
 	Graph& self_ = py::extract<Graph&>(self);
-	if (!self_.node_to_id.contains(node)) {
+	if (self_.node_to_id.contains(node)) {
 		return self.attr("adj")[node].attr("__iter__")();
 	}
 	else {
@@ -485,20 +485,20 @@ py::object nodes_subgraph(py::object self, py::list from_nodes) {
 	Graph& self_ = py::extract<Graph&>(self);
 	Graph& G_ = py::extract<Graph&>(G);
 	G_.graph.update(self_.graph);
-	py::dict nodes = py::extract<py::dict>(self.attr("nodes"));
-	py::dict adj = py::extract<py::dict>(self.attr("adj"));
+	py::object nodes = self.attr("nodes");
+	py::object adj = self.attr("adj");
 	for (int i = 0;i < py::len(from_nodes);i++) {
 		py::object node = from_nodes[i];
 		if (self_.node_to_id.contains(node)) {
-			py::dict node_attr = py::extract<py::dict>(nodes[node]);
+			py::object node_attr = nodes[node];
 			_add_one_node(G_, node, node_attr);
 		}
-		py::dict out_edges = py::extract<py::dict>(adj[node]);
-		py::list edge_items = py::extract<py::list>(out_edges.items());
-		for (int j = 0;j < py::len(edge_items);i++) {
+		py::object out_edges = adj[node];
+		py::list edge_items = py::list(out_edges.attr("items")());
+		for (int j = 0;j < py::len(edge_items);j++) {
 			py::tuple item = py::extract<py::tuple>(edge_items[j]);
 			py::object v = item[0];
-			py::dict edge_attr = py::extract<py::dict>(item[1]);
+			py::object edge_attr = item[1];
 			if (from_nodes.contains(v)) {
 				_add_one_edge(G_, node, v, edge_attr);
 			}
@@ -537,7 +537,7 @@ py::object Graph::get_nodes() {
 		for (const auto& node_info : node) {
 			node_t id = node_info.first;
 			const auto& node_attr = node_info.second;
-			nodes[this->id_to_node[id]] = attr_to_dict(node_attr);
+			nodes[this->id_to_node[id]] = MappingProxyType(attr_to_dict(node_attr));
 		}
 		this->nodes_cache = MappingProxyType(nodes);
 		this->dirty_nodes = false;
@@ -562,9 +562,9 @@ py::object Graph::get_adj() {
 			for (const auto& edge_info : ego_edges.second) {
 				node_t end_point = edge_info.first;
 				const auto& edge_attr = edge_info.second;
-				ego_edges_dict[this->id_to_node[end_point]] = attr_to_dict(edge_attr);
+				ego_edges_dict[this->id_to_node[end_point]] = MappingProxyType(attr_to_dict(edge_attr));
 			}
-			adj[this->id_to_node[start_point]] = ego_edges_dict;
+			adj[this->id_to_node[start_point]] = MappingProxyType(ego_edges_dict);
 		}
 		this->adj_cache = MappingProxyType(adj);
 		this->dirty_adj = false;
