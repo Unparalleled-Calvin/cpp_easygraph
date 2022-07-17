@@ -49,4 +49,5 @@ BOOST_PYTHON_MODULE(cpp_easygraph)
         .add_property("edges", &Graph::get_edges);
     
     py::def("constraint", &constraint, (py::arg("G"), py::arg("nodes") = py::object(), py::arg("weight") = py::object(), py::arg("n_workers") = py::object()));
+    py::def("hierarchy", &hierarchy, (py::arg("G"), py::arg("nodes") = py::object(), py::arg("weight") = py::object(), py::arg("n_workers") = py::object()));
 }

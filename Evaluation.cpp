@@ -50,7 +50,7 @@ Graph::weight_t  normalized_mutual_weight(Graph::adj_dict_factory& G, Graph::nod
 	}
 }
 
-Graph::weight_t local_constraint(Graph::adj_dict_factory& G, Graph::node_t u, Graph::node_t v, std::string weight) {
+Graph::weight_t local_constraint(Graph::adj_dict_factory& G, Graph::node_t u, Graph::node_t v, std::string weight = "None") {
 	std::pair<Graph::node_t, Graph::node_t> edge = std::make_pair(u, v);
 	if (local_constraint_rec.count(edge)) {
 		return local_constraint_rec[edge];
@@ -100,4 +100,104 @@ py::object constraint(py::object G, py::object nodes, py::object weight, py::obj
 	}
 	py::dict constraint = py::dict(constraint_results);
 	return constraint;
+}
+
+Graph::weight_t redundancy(Graph::adj_dict_factory& G, Graph::node_t u, Graph::node_t v, std::string weight = "None") {
+	Graph::weight_t r = 0;
+	for (const auto& neighbor_info : G) {
+		Graph::node_t w = neighbor_info.first;
+		r += normalized_mutual_weight(G, u, w, weight) * normalized_mutual_weight(G, v, w, weight, max);
+	}
+	return 1 - r;
+}
+
+py::object effective_size(py::object G, py::object nodes, py::object weight, py::object n_workers) {
+	Graph& G_ = py::extract<Graph&>(G);
+	sum_nmw_rec.clear();
+	max_nmw_rec.clear();
+	py::dict effective_size = py::dict();
+	if (nodes == py::object()) {
+		nodes = G;
+	}
+	nodes = py::list(nodes);
+	if (!G.attr("is_directed")() && weight == py::object()) {
+		for (int i = 0;i < py::len(nodes);i++) {
+			py::object v = nodes[i];
+			if (py::len(G[v]) == 0) {
+				effective_size[v] = py::object(Py_NAN);
+				continue;
+			}
+			py::object E = G.attr("ego_subgraph")(v);
+			if (py::len(E) > 1) {
+				effective_size[v] = py::len(E) - 1 - (2 * E.attr("size")()) / (py::len(E) - 1);
+			}
+			else {
+				effective_size[v] = 0;
+			}
+		}
+	}
+	else {
+		std::string weight_key = weight_to_string(weight);
+		for (int i = 0;i < py::len(nodes);i++) {
+			py::object v = nodes[i];
+			if (py::len(G[v]) == 0) {
+				effective_size[v] = py::object(Py_NAN);
+				continue;
+			}
+			Graph::weight_t redundancy_sum = 0;
+			Graph::node_t v_id = py::extract<Graph::node_t>(G_.node_to_id[v]);
+			for (const auto& neighbor_info : G_.adj) {
+				Graph::node_t u_id = neighbor_info.first;
+				redundancy_sum += redundancy(G_.adj, v_id, u_id, weight_key);
+			}
+			effective_size[v] = redundancy_sum;
+		}
+	}
+	return effective_size;
+}
+
+py::object hierarchy(py::object G, py::object nodes, py::object weight, py::object n_workers) {
+	sum_nmw_rec.clear();
+	max_nmw_rec.clear();
+	local_constraint_rec.clear();
+	std::string weight_key = weight_to_string(weight);
+	if (nodes == py::object()) {
+		nodes = G.attr("nodes");
+	}
+	py::list nodes_list = py::list(nodes);
+
+	Graph& G_ = py::extract<Graph&>(G);
+	py::dict hierarchy = py::dict();
+
+	for (int i = 0;i < py::len(nodes_list);i++) {
+		py::object v = nodes_list[i];
+		py::object E = G.attr("ego_subgraph")(v);
+
+		int n = py::len(E) - 1;
+
+		Graph::weight_t C = 0;
+		std::map<Graph::node_t, Graph::weight_t> c;
+		py::list neighbors_of_v = py::list(G.attr("neighbors")(v)); //Warning: multigraph
+
+		for (int j = 0;j < py::len(neighbors_of_v);j++) {
+			py::object w = neighbors_of_v[j];
+			Graph::node_t v_id = py::extract<Graph::node_t>(G_.node_to_id[v]);
+			Graph::node_t w_id = py::extract<Graph::node_t>(G_.node_to_id[w]);
+			C += local_constraint(G_.adj, v_id, w_id);
+			c[w_id] = local_constraint(G_.adj, v_id, w_id);
+		}
+		if (n > 1) {
+			Graph::weight_t hierarchy_sum = 0;
+			for (int k = 0;k < py::len(neighbors_of_v);k++) {
+				py::object w = neighbors_of_v[k];
+				Graph::node_t w_id = py::extract<Graph::node_t>(G_.node_to_id[w]);
+				hierarchy_sum += c[w_id] / C * n * log(c[w_id] / C * n) / (n * log(n));
+			}
+			hierarchy[v] = hierarchy_sum;
+		}
+		if (!hierarchy.has_key(v)) {
+			hierarchy[v] = 0;
+		}
+	}
+	return hierarchy;
 }
