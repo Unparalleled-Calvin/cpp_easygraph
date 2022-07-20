@@ -293,7 +293,7 @@ py::object add_edges_from(py::tuple args, py::dict attr) {
 			}
 			v_id = _add_one_node(self, v);
 		}
-		auto datadict = self.adj[u_id].find(v_id) == self.adj[u_id].end() ? Graph::node_attr_dict_factory() : self.adj[u_id][v_id];
+		auto datadict = self.adj[u_id].count(v_id) ? self.adj[u_id][v_id] : Graph::node_attr_dict_factory();
 		py::list items = py::list(attr);
 		items.extend(py::list(dd));
 		for (int i = 0;i < py::len(items);i++) {
@@ -362,10 +362,10 @@ py::object add_edges_from_file(Graph& self, py::str file, py::object weighted) {
 			self.adj[u][v][key] = self.adj[v][u][key] = weight;
 		}
 		else {
-			if (self.adj[u].find(v) == self.adj[u].end()) {
+			if (!self.adj[u].count(v)) {
 				self.adj[u][v] = Graph::node_attr_dict_factory();
 			}
-			if (self.adj[v].find(u) == self.adj[v].end()) {
+			if (!self.adj[v].count(u)) {
 				self.adj[v][u] = Graph::node_attr_dict_factory();
 			}
 		}
