@@ -178,14 +178,14 @@ py::object hierarchy(py::object G, py::object nodes, py::object weight, py::obje
 
 		Graph::weight_t C = 0;
 		std::map<Graph::node_t, Graph::weight_t> c;
-		py::list neighbors_of_v = py::list(G.attr("neighbors")(v)); //Warning: multigraph
+		py::list neighbors_of_v = py::list(G.attr("neighbors")(v));
 
 		for (int j = 0;j < py::len(neighbors_of_v);j++) {
 			py::object w = neighbors_of_v[j];
 			Graph::node_t v_id = py::extract<Graph::node_t>(G_.node_to_id[v]);
 			Graph::node_t w_id = py::extract<Graph::node_t>(G_.node_to_id[w]);
-			C += local_constraint(G_.adj, v_id, w_id);
-			c[w_id] = local_constraint(G_.adj, v_id, w_id);
+			C += local_constraint(G_.adj, v_id, w_id, weight_key);
+			c[w_id] = local_constraint(G_.adj, v_id, w_id, weight_key);
 		}
 		if (n > 1) {
 			Graph::weight_t hierarchy_sum = 0;
