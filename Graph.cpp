@@ -34,7 +34,20 @@ py::object __len__(py::object self) {
 
 py::object __contains__(py::object self, py::object node) {
 	Graph& self_ = py::extract<Graph&>(self);
-	return self_.node_to_id.contains(node);
+	try {
+		return self_.node_to_id.contains(node);
+	}
+	catch (const py::error_already_set&) {
+		PyObject* type, * value, * traceback;
+		PyErr_Fetch(&type, &value, &traceback);
+		if (PyErr_GivenExceptionMatches(PyExc_TypeError, type)) {
+			return py::object(false);
+		}
+		else {
+			PyErr_Restore(type, value, traceback);
+			return py::object();
+		}
+	}
 }
 
 py::object __getitem__(py::object self, py::object node) {
@@ -414,8 +427,14 @@ py::object remove_edges(py::object self, py::list edges_to_remove) {
 	return py::object();
 }
 
-py::object number_of_edges(py::object self) {
-	return self.attr("size")();
+py::object number_of_edges(py::object self, py::object u, py::object v) {
+	if (u == py::object()) {
+		return self.attr("size")();
+	}
+	Graph& self_ = py::extract<Graph&>(self);
+	Graph::node_t u_id = py::extract<Graph::node_t>(self_.node_to_id.get(u, -1));
+	Graph::node_t v_id = py::extract<Graph::node_t>(self_.node_to_id.get(v, -1));
+	return py::object(int(self_.adj.count(u_id) && self_.adj[u_id].count(v_id)));
 }
 
 py::object has_edge(Graph& self, py::object u, py::object v) {
