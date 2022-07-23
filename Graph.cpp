@@ -205,6 +205,29 @@ py::object has_node(Graph& self, py::object node) {
 	return self.node_to_id.contains(node);
 }
 
+py::object nbunch_iter(py::object self, py::object nbunch) {
+	py::object bunch = py::object();
+	if (nbunch == py::object()) {
+		bunch = self.attr("adj").attr("__iter__")();
+	}
+	else if (self.contains(nbunch)) {
+		py::list nbunch_wrapper = py::list();
+		nbunch_wrapper.append(nbunch);
+		bunch = nbunch_wrapper.attr("__iter__")();
+	}
+	else {
+		py::list nbunch_list = py::list(nbunch), nodes_list = py::list();
+		for (int i = 0;i < py::len(nbunch_list);i++) {
+			py::object n = nbunch_list[i];
+			if (self.contains(n)) {
+				nodes_list.append(n);
+			}
+		}
+		bunch = nbunch_list.attr("__iter__")();
+	}
+	return bunch;
+}
+
 void _add_one_edge(Graph& self, py::object u_of_edge, py::object v_of_edge, py::object edge_attr) {
 	Graph::node_t u, v;
 	if (!self.node_to_id.contains(u_of_edge)) {
