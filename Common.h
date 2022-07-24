@@ -6,6 +6,7 @@
 #include <fstream>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <exception>
 #include <set>
 #include <cmath>
