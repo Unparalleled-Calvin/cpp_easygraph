@@ -2,6 +2,7 @@
 #include "Utils.h"
 #include "Structural_holes.h"
 #include "Path.h"
+#include "Components.h"
 
 py::object warn;
 py::object MappingProxyType;
@@ -53,4 +54,5 @@ BOOST_PYTHON_MODULE(cpp_easygraph)
     py::def("effective_size", &effective_size, (py::arg("G"), py::arg("nodes") = py::object(), py::arg("weight") = py::object(), py::arg("n_workers") = py::object()));
     py::def("hierarchy", &hierarchy, (py::arg("G"), py::arg("nodes") = py::object(), py::arg("weight") = py::object(), py::arg("n_workers") = py::object()));
     py::def("_dijkstra_multisource", &_dijkstra_multisource, (py::arg("G"), py::arg("sources"), py::arg("weight") = "weight", py::arg("target") = py::object()));
+    py::def("generator_biconnected_components_edges",&generator_biconnected_components_edges,(py::arg("G")));
 }
