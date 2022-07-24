@@ -9,5 +9,6 @@
 #include <exception>
 #include <set>
 #include <cmath>
+#include <algorithm>
 
 namespace py = boost::python;

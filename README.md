@@ -241,6 +241,7 @@ Linux
   rm *.o
   rm *.so
   g++ -fPIC -shared -I/usr/include/python3.8 -Wl,-soname,cpp_easygraph.so -o cpp_easygraph.so  Graph.cpp Utils.cpp Evaluation.cpp Path.cpp cpp_easygraph.cpp -lpython3.8 -lboost_python
+  # 可以添加-o..等编译优化标志
   ```
   
   **注意**：
