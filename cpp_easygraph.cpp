@@ -59,4 +59,6 @@ BOOST_PYTHON_MODULE(cpp_easygraph)
     py::def("generator_biconnected_components_edges",&generator_biconnected_components_edges,(py::arg("G")));
     py::def("clustering", &clustering, (py::arg("G"), py::arg("nodes") = py::object(), py::arg("weight") = py::object()));
     py::def("Floyd",&Floyd,(py::arg("G")));
+    py::def("Prim",&Prim,(py::arg("G")));
+    py::def("Kruskal",&Kruskal,(py::arg("G")));
 }
